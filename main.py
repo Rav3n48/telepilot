@@ -1,9 +1,13 @@
+import asyncio
+
 from config import BOT_TOKEN
+from db.session import init_db
 
 
-def main():
-    print(f"Starting TelePilot with token: {BOT_TOKEN[:8]}...")
+async def main():
+    print(f"Starting Telepilot with token: {BOT_TOKEN[:8]}...")
+    await init_db()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
