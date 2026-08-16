@@ -1,6 +1,8 @@
-from sqlalchemy import Column, Integer, BigInteger, String, DateTime, ForeignKey, Text, Boolean, Enum, func
-from sqlalchemy.orm import declarative_base, relationship
 import enum
+
+from sqlalchemy import Column, Integer, BigInteger, String, DateTime, ForeignKey, Text, Boolean, Enum
+from sqlalchemy.orm import declarative_base, relationship
+from datetime import datetime
 
 Base = declarative_base()
 
@@ -21,9 +23,10 @@ class User(Base):
     first_name = Column(String(255), nullable=False)
     last_name = Column(String(255), nullable=True)
     username = Column(String(255), nullable=True)
+    bio = Column(String(255), nullable=True)
     current_profile_id = Column(String(255), nullable=True)
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     messages = relationship("Message", back_populates="user")
 
@@ -40,11 +43,10 @@ class Chat(Base):
     title = Column(String(255), nullable=True)
     description = Column(Text, nullable=True)
     invite_link = Column(String(255), nullable=True)
-    bio = Column(String(255), nullable=True)
     photo_file_id = Column(String(255), nullable=True)
     business_connection_id = Column(Integer, ForeignKey("business_connections.id"), nullable=True)
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     messages = relationship("Message", back_populates="chat")
     business_connection = relationship("BusinessConnection", back_populates="chats")
@@ -64,8 +66,8 @@ class Message(Base):
     text = Column(Text, nullable=True)
     sent_by_bot = Column(Boolean, default=False, nullable=False)
     business_connection_id = Column(Integer, ForeignKey("business_connections.id"), nullable=True)
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     user = relationship("User", back_populates="messages")
     chat = relationship("Chat", back_populates="messages")
@@ -73,7 +75,7 @@ class Message(Base):
     business_connection = relationship("BusinessConnection", back_populates="messages")
 
     def __repr__(self):
-        return f"<Message(id={self.id}, telegram_message_id={self.telegram_message_id}, text={self.text[:30] if self.text else None})>"
+        return f"<Message(id={self.id}, telegram_message_id={self.telegram_message_id}, text={self.text[:10] if self.text else None})>"
 
 
 class BusinessConnection(Base):
@@ -83,8 +85,8 @@ class BusinessConnection(Base):
     connection_id = Column(String(255), unique=True, nullable=False, index=True)
     user_chat_id = Column(BigInteger, nullable=False)
     is_enabled = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     messages = relationship("Message", back_populates="business_connection")
     chats = relationship("Chat", back_populates="business_connection")
