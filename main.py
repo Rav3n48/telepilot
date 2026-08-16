@@ -5,6 +5,7 @@ from telegram.ext import Application
 from config import BOT_TOKEN, PROXY_URL
 from db.session import init_db
 from handlers import register_handlers
+from interface import CLIInterface
 
 
 async def main():
@@ -20,9 +21,11 @@ async def main():
     await application.start()
     await application.updater.start_polling()
 
+    interface = CLIInterface()
+
     try:
         print("bot is running...")
-        await asyncio.Event().wait()
+        await interface.run(application)
     finally:
         await application.updater.stop()
         await application.stop()
