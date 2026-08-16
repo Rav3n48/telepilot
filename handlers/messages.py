@@ -4,6 +4,13 @@ from sqlalchemy import select
 
 from db.models import User, Chat, ChatType, Message
 from db.session import AsyncSessionLocal
+from core.events import message_queue
+
+
+def _update_user(db_user, user):
+    db_user.first_name = user.first_name
+    db_user.last_name = user.last_name
+    db_user.username = user.username
 
 
 async def _get_or_create_user(user, session):
@@ -23,8 +30,13 @@ async def _get_or_create_user(user, session):
             )
             session.add(db_user)
             await session.flush()
+        _update_user(db_user, user)
         return db_user
     return None
+
+
+def _update_chat(db_chat, chat):
+    db_chat.title = chat.title
 
 
 async def _get_or_create_chat(chat, session):
@@ -45,6 +57,7 @@ async def _get_or_create_chat(chat, session):
 
         session.add(db_chat)
         await session.flush()
+    _update_chat(db_chat, chat)
     return db_chat
 
 
@@ -67,6 +80,8 @@ async def handle_messages(update: Update, _context: ContextTypes.DEFAULT_TYPE):
 
     if message is None or chat is None or message.text is None:
         return
+
+    await message_queue.put((user.full_name, chat.id, message.id, message.text))
 
     async with AsyncSessionLocal() as session:
         db_user = await _get_or_create_user(user, session)
