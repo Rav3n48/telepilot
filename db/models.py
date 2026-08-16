@@ -69,7 +69,7 @@ class Message(Base):
 
     user = relationship("User", back_populates="messages")
     chat = relationship("Chat", back_populates="messages")
-    replies = relationship("Message", remote_side="id", backref="parent")
+    replies = relationship("Message", remote_side=[id], backref="parent")
     business_connection = relationship("BusinessConnection", back_populates="messages")
 
     def __repr__(self):
