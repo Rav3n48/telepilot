@@ -81,7 +81,9 @@ async def handle_messages(update: Update, _context: ContextTypes.DEFAULT_TYPE):
     if message is None or chat is None or message.text is None:
         return
 
-    await message_queue.put((user.full_name, chat.id, message.id, message.text))
+    await message_queue.put(
+        (user.full_name if user else "Unknown", chat.id, message.id, message.business_connection_id, message.text)
+    )
 
     async with AsyncSessionLocal() as session:
         db_user = await _get_or_create_user(user, session)
