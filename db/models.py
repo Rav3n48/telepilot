@@ -33,6 +33,13 @@ class User(Base):
     def __repr__(self):
         return f"<User(id={self.id}, telegram_id={self.telegram_id}, username={self.username})>"
 
+    @property
+    def full_name(self):
+        full_name = self.first_name
+        if self.last_name:
+            full_name += f" {self.last_name}"
+        return full_name
+
 
 class Chat(Base):
     __tablename__ = "chats"
