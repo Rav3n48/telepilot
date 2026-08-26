@@ -41,18 +41,23 @@ async def get_or_save_user(session, user_id, first_name, last_name=None, usernam
 
 
 def _update_chat(db_chat, title, description, invite_link):
-    db_chat.title = title
-    db_chat.description = description
-    db_chat.invite_link = invite_link
+    if title:
+        db_chat.title = title
+    if description is not None:
+        db_chat.description = description
+    if invite_link is not None:
+        db_chat.invite_link = invite_link
 
 
 async def get_or_save_chat(session, chat_id, chat_type, title, description=None, invite_link=None, business_connection_id=None):
     try:
-        result = await session.execute(
-            select(Chat).where(
-                Chat.telegram_chat_id == chat_id
-            )
-        )
+        query = select(Chat).where(Chat.telegram_chat_id == chat_id)
+        if business_connection_id is None:
+            query = query.where(Chat.business_connection_id.is_(None))
+        else:
+            query = query.where(Chat.business_connection_id == business_connection_id)
+
+        result = await session.execute(query)
 
         db_chat = result.scalar_one_or_none()
 
@@ -124,20 +129,13 @@ async def get_chats():
         return list(result.scalars().all())
 
 
-async def get_chat_messages(telegram_chat_id, limit=50):
+async def get_chat_messages(chat_id, limit=50):
     async with AsyncSessionLocal() as session:
-        chat_result = await session.execute(
-            select(Chat).where(Chat.telegram_chat_id == telegram_chat_id)
-        )
-        chat = chat_result.scalar_one_or_none()
-        if chat is None:
-            return []
-
         result = await session.execute(
             select(Message)
-            .where(Message.chat_id == chat.id)
+            .where(Message.chat_id == chat_id)
             .options(selectinload(Message.user), selectinload(Message.business_connection))
-            .order_by(Message.created_at.asc())
+            .order_by(Message.created_at.desc())
             .limit(limit)
         )
-        return list(result.scalars().all())
+        return list(reversed(result.scalars().all()))

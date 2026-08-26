@@ -15,13 +15,11 @@ class CLIInterface(Interface):
     async def display_db_messages(self):
         chats = await get_chats()
         for chat in chats:
-            if chat.business_connection_id:
-                messages = await get_chat_messages(chat.telegram_chat_id, limit=10)
-                for message in messages:
+            messages = await get_chat_messages(chat.id, limit=10)
+            for message in messages:
+                if chat.business_connection_id:
                     print(f"\n[Chat {chat.telegram_chat_id}] [Message {message.telegram_message_id}] [Business {chat.business_connection.connection_id}] {message.user.full_name}: {message.text}")
-            else:
-                messages = await get_chat_messages(chat.telegram_chat_id, limit=10)
-                for message in messages:
+                else:
                     print(f"\n[Chat {chat.telegram_chat_id}] [Message {message.telegram_message_id}] {message.user.full_name}: {message.text}")
 
     async def _display_messages(self):
