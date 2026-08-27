@@ -1,6 +1,6 @@
 import enum
 
-from sqlalchemy import Column, Integer, BigInteger, String, DateTime, ForeignKey, Text, Boolean, Enum
+from sqlalchemy import Column, Integer, BigInteger, String, DateTime, ForeignKey, Text, Boolean, Enum, UniqueConstraint
 from sqlalchemy.orm import declarative_base, relationship
 from datetime import datetime
 
@@ -24,7 +24,6 @@ class User(Base):
     last_name = Column(String(255), nullable=True)
     username = Column(String(255), nullable=True)
     bio = Column(String(255), nullable=True)
-    current_profile_id = Column(String(255), nullable=True)
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
@@ -33,23 +32,37 @@ class User(Base):
     def __repr__(self):
         return f"<User(id={self.id}, telegram_id={self.telegram_id}, username={self.username})>"
 
+    @property
+    def full_name(self):
+        full_name = self.first_name
+        if self.last_name:
+            full_name += f" {self.last_name}"
+        return full_name
+
 
 class Chat(Base):
     __tablename__ = "chats"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    telegram_chat_id = Column(BigInteger, unique=True, nullable=False, index=True)
+    telegram_chat_id = Column(BigInteger, nullable=False, index=True)
+    business_connection_id = Column(Integer, ForeignKey("business_connections.id"), nullable=True)
     type = Column(Enum(ChatType), nullable=False)
     title = Column(String(255), nullable=True)
     description = Column(Text, nullable=True)
     invite_link = Column(String(255), nullable=True)
-    photo_file_id = Column(String(255), nullable=True)
-    business_connection_id = Column(Integer, ForeignKey("business_connections.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     messages = relationship("Message", back_populates="chat")
     business_connection = relationship("BusinessConnection", back_populates="chats")
+
+    __table_args__ = (
+        UniqueConstraint("telegram_chat_id", "business_connection_id"),
+    )
+
+    @property
+    def is_business(self):
+        return self.business_connection_id is not None
 
     def __repr__(self):
         return f"<Chat(id={self.id}, telegram_chat_id={self.telegram_chat_id}, type={self.type})>"
@@ -75,7 +88,7 @@ class Message(Base):
     business_connection = relationship("BusinessConnection", back_populates="messages")
 
     def __repr__(self):
-        return f"<Message(id={self.id}, telegram_message_id={self.telegram_message_id}, text={self.text[:10] if self.text else None})>"
+        return f"<Message(id={self.id}, telegram_message_id={self.telegram_message_id})>"
 
 
 class BusinessConnection(Base):

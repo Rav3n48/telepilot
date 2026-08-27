@@ -5,11 +5,22 @@ from telegram.ext import Application
 
 from core.events import message_queue
 from .base import Interface
+from db.queries import get_chats, get_chat_messages
 
 
 class CLIInterface(Interface):
     def __init__(self):
         self._display_task: asyncio.Task | None = None
+
+    async def display_db_messages(self):
+        chats = await get_chats()
+        for chat in chats:
+            messages = await get_chat_messages(chat.id, limit=10)
+            for message in messages:
+                if chat.business_connection_id:
+                    print(f"\n[Chat {chat.telegram_chat_id}] [Message {message.telegram_message_id}] [Business {chat.business_connection.connection_id}] {message.user.full_name}: {message.text}")
+                else:
+                    print(f"\n[Chat {chat.telegram_chat_id}] [Message {message.telegram_message_id}] {message.user.full_name}: {message.text}")
 
     async def _display_messages(self):
         while True:
@@ -105,6 +116,8 @@ class CLIInterface(Interface):
         print("Type '/send_b <chat_id> <business_id> <message>' to send a business message.")
         print("Type '/reply_b <chat_id> <message_id> <business_id> <message>' to reply a business message.")
         print("Type '/quit' or '/exit' to stop.\n")
+        await asyncio.sleep(0.1)
+        await self.display_db_messages()
 
         try:
             while True:
