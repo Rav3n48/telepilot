@@ -3,6 +3,7 @@ import readline  # noqa: importing this patches input() with arrow-key and histo
 
 from telegram.ext import Application
 
+from core.actions import reply_message, send_message
 from core.events import message_queue
 from .base import Interface
 from db.queries import get_chats, get_chat_messages
@@ -18,9 +19,11 @@ class CLIInterface(Interface):
             messages = await get_chat_messages(chat.id, limit=10)
             for message in messages:
                 if chat.business_connection_id:
-                    print(f"\n[Chat {chat.telegram_chat_id}] [Message {message.telegram_message_id}] [Business {chat.business_connection.connection_id}] {message.user.full_name}: {message.text}")
+                    print(
+                        f"\n[Chat {chat.telegram_chat_id}] [Message {message.telegram_message_id}] [Business {chat.business_connection.connection_id}] {message.user.full_name}: {message.text}")
                 else:
-                    print(f"\n[Chat {chat.telegram_chat_id}] [Message {message.telegram_message_id}] {message.user.full_name}: {message.text}")
+                    print(
+                        f"\n[Chat {chat.telegram_chat_id}] [Message {message.telegram_message_id}] {message.user.full_name}: {message.text}")
 
     async def _display_messages(self):
         while True:
@@ -43,7 +46,9 @@ class CLIInterface(Interface):
             print("Chat ID must be a number.")
             return
         try:
-            await application.bot.send_message(chat_id=chat_id, text=text)
+            await send_message(
+                application.bot, chat_id=chat_id, text=text
+            )
             print("Sent.")
         except Exception as e:
             print(f"Failed to send: {e}")
@@ -61,8 +66,8 @@ class CLIInterface(Interface):
             print("Chat ID and Message ID must be a number.")
             return
         try:
-            await application.bot.send_message(
-                chat_id=chat_id, reply_to_message_id=message_id, text=text
+            await reply_message(
+                application.bot, chat_id=chat_id, message_id=message_id, text=text
             )
             print("Sent.")
         except Exception as e:
@@ -80,8 +85,8 @@ class CLIInterface(Interface):
             print("Chat ID must be a number.")
             return
         try:
-            await application.bot.send_message(
-                chat_id=chat_id, business_connection_id=business_id, text=text
+            await send_message(
+                application.bot, chat_id=chat_id, text=text, business_connection_id=business_id,
             )
             print("Sent.")
         except Exception as e:
@@ -100,8 +105,12 @@ class CLIInterface(Interface):
             print("Chat ID and Message ID must be a number.")
             return
         try:
-            await application.bot.send_message(
-                chat_id=chat_id, reply_to_message_id=message_id, business_connection_id=business_id, text=text
+            await reply_message(
+                application.bot,
+                chat_id=chat_id,
+                message_id=message_id,
+                text=text,
+                business_connection_id=business_id,
             )
             print("Sent.")
         except Exception as e:
