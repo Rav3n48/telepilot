@@ -121,6 +121,68 @@ async def get_or_save_business_connection(session, connection_id, user_chat_id):
         return None
 
 
+async def save_bot_message(chat_telegram_id, telegram_message_id, text, reply_to_telegram_message_id=None, business_connection_id=None):
+    try:
+        async with AsyncSessionLocal() as session:
+            business_pk = None
+            if business_connection_id:
+                result = await session.execute(
+                    select(BusinessConnection).where(
+                        BusinessConnection.connection_id == business_connection_id
+                    )
+                )
+                db_business = result.scalar_one_or_none()
+                if db_business is not None:
+                    business_pk = db_business.id
+
+            query = select(Chat).where(Chat.telegram_chat_id == chat_telegram_id)
+            if business_pk is None and not business_connection_id:
+                query = query.where(Chat.business_connection_id.is_(None))
+            elif business_pk is not None:
+                query = query.where(Chat.business_connection_id == business_pk)
+            else:
+                logger.warning(
+                    f"save_bot_message: business_connection_id {business_connection_id} not found, skipping save"
+                )
+                return None
+
+            result = await session.execute(query)
+            db_chat = result.scalar_one_or_none()
+            if db_chat is None:
+                logger.warning(
+                    f"save_bot_message: chat {chat_telegram_id} (business {business_connection_id}) not found, skipping save"
+                )
+                return None
+
+            reply_db_id = None
+            if reply_to_telegram_message_id is not None:
+                result = await session.execute(
+                    select(Message).where(
+                        Message.telegram_message_id == reply_to_telegram_message_id,
+                        Message.chat_id == db_chat.id,
+                    )
+                )
+                parent = result.scalar_one_or_none()
+                if parent is not None:
+                    reply_db_id = parent.id
+
+            await save_message(
+                session,
+                message_id=telegram_message_id,
+                chat_id=db_chat.id,
+                user_id=None,
+                text=text,
+                reply_to_message_id=reply_db_id,
+                sent_by_bot=True,
+                business_connection_id=business_pk,
+            )
+            await session.commit()
+            return True
+    except Exception as e:
+        logger.error(f"Error in save_bot_message: {e}")
+        return None
+
+
 async def get_chats():
     async with AsyncSessionLocal() as session:
         result = await session.execute(
