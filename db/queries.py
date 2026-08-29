@@ -196,6 +196,7 @@ async def get_chat_messages(chat_id, limit=50):
         result = await session.execute(
             select(Message)
             .where(Message.chat_id == chat_id)
+            .where(Message.sent_by_bot == False)
             .options(selectinload(Message.user), selectinload(Message.business_connection))
             .order_by(Message.created_at.desc())
             .limit(limit)
